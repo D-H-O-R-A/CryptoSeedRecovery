@@ -1,0 +1,61 @@
+{
+  "name": "cryptoseed",
+  "version": "1.0.0",
+  "description": "Biblioteca e ferramenta CLI empresarial de alta performance para diagnóstico, validação e recuperação de sementes mnemônicas (seed phrases) criptográficas.",
+  "main": "src/index.js",
+  "bin": {
+    "cryptoseed": "src/bin/cli.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "README.*.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node src/bin/cli.js",
+    "test": "node --test test/**/*.test.js",
+    "build": "pkg . --targets node18-linux-x64 --out-path dist"
+  },
+  "keywords": [
+    "cryptoseed",
+    "b2wallet",
+    "better2better",
+    "diegooris",
+    "seed-recovery",
+    "mnemonic-recovery",
+    "bip39",
+    "bip39-recovery",
+    "electrum-recovery",
+    "bitcoin-recovery",
+    "ethereum-recovery",
+    "solana-recovery",
+    "cardano-recovery",
+    "blockchain",
+    "hd-wallet",
+    "derivation-path",
+    "bip44"
+  ],
+  "author": "diegooris",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diegooris/CryptoSeedRecovery.git"
+  },
+  "bugs": {
+    "url": "https://github.com/diegooris/CryptoSeedRecovery/issues"
+  },
+  "homepage": "https://better2better.net",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cli-progress": "^3.12.0",
+    "ethers": "^6.17.0",
+    "inquirer": "^14.0.2"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  }
+}
