@@ -1,12 +1,31 @@
 # 🛡️ cryptoseed
 
+
+<p align="left">
+  <a href="https://www.npmjs.com/package/cryptoseed">
+    <img src="https://img.shields.io/npm/v/cryptoseed.svg?style=flat-square" alt="npm version">
+  </a>
+  <a href="https://github.com/D-H-O-R-A/CryptoSeedRecovery/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/D-H-O-R-A/CryptoSeedRecovery.svg?style=flat-square" alt="license">
+  </a>
+  <a href="https://github.com/D-H-O-R-A/CryptoSeedRecovery/stargazers">
+    <img src="https://img.shields.io/github/stars/D-H-O-R-A/CryptoSeedRecovery.svg?style=flat-square" alt="stars">
+  </a>
+  <a href="https://github.com/D-H-O-R-A/CryptoSeedRecovery/issues">
+    <img src="https://img.shields.io/github/issues/D-H-O-R-A/CryptoSeedRecovery.svg?style=flat-square" alt="issues">
+  </a>
+  <a href="https://better2better.com.br/softwares/b2-wallet">
+    <img src="https://img.shields.io/badge/Built%20For-b2%20wallet-blueviolet?style=flat-square" alt="b2 wallet">
+  </a>
+</p>
+
 🌍 **Select Language / Selecione o Idioma:**
 [Português](./README.md) | [English](./README.en.md) | [Español](./README.es.md) | [Français](./README.fr.md) | [Italiano](./README.it.md) | [Türkçe](./README.tr.md) | [Русский](./README.ru.md) | [简体中文](./README.zh.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [עברית](./README.he.md)
 
 
 **cryptoseed** 是一个企业级、轻量级且高性能的**纯 JavaScript** (Node.js) 库，专为诊断、验证和恢复丢失、被打乱或拼写错误的加密货币助记词（*seed phrases*）而设计。
 
-本库在 **b2 wallet**（由 [diegooris](https://diegohorantunes.web.app/) 领导的 [better2better](https://better2better.net) 旗下安全与基础设施生态系统）支持下开发，旨在为开发人员和安全分析师提供极高的鲁棒性、高速搜索能力以及在 **39 个不同的区块链和生态系统**中进行地址派生的精准历史兼容性。全部功能 100% 离线自主运行，无需任何 C/C++ 原生编译依赖，也无需任何可能影响构建移植性的外部包。
+本库在 [**b2 wallet**](https://better2better.com.br/softwares/b2-wallet)（由 [diegooris](https://diegohorantunes.web.app/) 领导的 [better2better](https://better2better.net) 旗下安全与基础设施生态系统）支持下开发，旨在为开发人员和安全分析师提供极高的鲁棒性、高速搜索能力以及在 **39 个不同的区块链和生态系统**中进行地址派生的精准历史兼容性。全部功能 100% 离线自主运行，无需任何 C/C++ 原生编译依赖，也无需任何可能影响构建移植性的外部包。
 
 ---
 
@@ -34,7 +53,7 @@
 
 ## ⚡ 为什么创建 cryptoseed？
 
-当我们需要为 **b2 wallet** / [better2better](https://better2better.net) 生态系统的客户和朋友恢复钱包时，我发现现有工具要么过于复杂（需要会破坏 Node 的原生 C++ 编译环境），要么无法理解区块链的历史演变。我创建了这个库来提供以下解决方案：
+当我们需要为 [**b2 wallet**](https://better2better.com.br/softwares/b2-wallet) / [better2better](https://better2better.net) 生态系统的客户和朋友恢复钱包时，我发现现有工具要么过于复杂（需要会破坏 Node 的原生 C++ 编译环境），要么无法理解区块链的历史演变。我创建了这个库来提供以下解决方案：
 
 1.  **零原生依赖 (纯 JS):** 在 Windows、Linux 或 macOS 上均可开箱即用。极佳地支持使用 `pkg` 编译为便携式独立可执行文件。
 2.  **“字母裁剪”技术 (Prefix Fallback):** 独创的纠错算法。如果您输入了错误的单词（如 `engino`），它将逐个字符进行裁剪分析（`e-n-g-i-n-o` -> `e-n-g-i-n` -> `engine`），自动在官方字典中定位并建议正确的 BIP-39 单词。
@@ -46,7 +65,7 @@
 
 ## 🛠️ 恢复功能与搜索工程
 
-**cryptoseed** 最初于 **2023** 年开发，是 **b2 wallet** ([better2better](https://better2better.net)) 生态系统的专属内部工具。现已面向公众开源，旨在提供在科学上远超市场普通方案的恢复基础设施。该搜索引擎具备以下核心能力与技术优势：
+**cryptoseed** 最初于 **2023** 年开发，是 [**b2 wallet**](https://better2better.com.br/softwares/b2-wallet) ([better2better](https://better2better.net)) 生态系统的专属内部工具。现已面向公众开源，旨在提供在科学上远超市场普通方案的恢复基础设施。该搜索引擎具备以下核心能力与技术优势：
 
 ### 🎯 助记词状态分类标注
 与常规恢复脚本不同，交互式向导允许您使用三种语义分类，为助记词中的每个单词配置个性化的信任状态：
@@ -93,7 +112,7 @@ npm install cryptoseed
 
 ## 🛡️ 代码 API 调用示例 (JavaScript)
 
-本库提供了清晰且结构良好的导出，以便在您的应用程序中立即集成 **b2 wallet** 安全逻辑：
+本库提供了清晰且结构良好的导出，以便在您的应用程序中立即集成 [**b2 wallet**](https://better2better.com.br/softwares/b2-wallet) 安全逻辑：
 
 ```javascript
 const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
@@ -158,21 +177,21 @@ cryptoseed
 
 | 生态系统 / 网络 | 代币符号 | 默认派生路径 (HD Path) | 兼容的参考钱包 |
 | :--- | :---: | :--- | :--- |
-| **Bitcoin** | BTC | `m/84'/0'/0'/0/i` (Native SegWit)<br>`m/49'/0'/0'/0/i` (Nested SegWit)<br>`m/44'/0'/0'/0/i` (Legacy)<br>`m/86'/0'/0'/0/i` (Taproot) | B2 Wallet, Electrum, Trust Wallet, Ledger, Trezor |
-| **Ethereum** | ETH | `m/44'/60'/0'/0/i` | B2 Wallet, MetaMask, Rabby, Trust Wallet, Ledger, Trezor |
-| **BNB Chain** | BNB | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Trust Wallet, Ledger, Trezor |
-| **Polygon** | MATIC | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Trust Wallet, Ledger, Trezor |
-| **Arbitrum** | ARB | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Rabby, Trust Wallet, Ledger, Trezor |
-| **Optimism** | OP | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Rabby, Trust Wallet, Ledger, Trezor |
-| **Avalanche** | AVAX | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, Core, MetaMask, Trust Wallet, Ledger, Trezor |
-| **Base** | BASE | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Trust Wallet, Ledger, Trezor |
-| **Fantom** | FTM | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Trust Wallet, Ledger, Trezor |
-| **Cronos** | CRO | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Trust Wallet, Ledger, Trezor |
-| **Harmony** | ONE | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Trust Wallet |
-| **Gnosis Chain** | GNOSIS | `m/44'/60'/0'/0/i` (EVM) | B2 Wallet, MetaMask, Rabby, Trust Wallet, Ledger, Trezor |
-| **Solana** | SOL | `m/44'/501'/0'/0'` (Phantom Standard)<br>`m/44'/501'/0'/0/i` (Sollet/Legacy) | B2 Wallet, Phantom, Sollet, Solflare, Trust Wallet |
+| **Bitcoin** | BTC | `m/84'/0'/0'/0/i` (Native SegWit)<br>`m/49'/0'/0'/0/i` (Nested SegWit)<br>`m/44'/0'/0'/0/i` (Legacy)<br>`m/86'/0'/0'/0/i` (Taproot) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), Electrum, Trust Wallet, Ledger, Trezor |
+| **Ethereum** | ETH | `m/44'/60'/0'/0/i` | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Rabby, Trust Wallet, Ledger, Trezor |
+| **BNB Chain** | BNB | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Trust Wallet, Ledger, Trezor |
+| **Polygon** | MATIC | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Trust Wallet, Ledger, Trezor |
+| **Arbitrum** | ARB | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Rabby, Trust Wallet, Ledger, Trezor |
+| **Optimism** | OP | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Rabby, Trust Wallet, Ledger, Trezor |
+| **Avalanche** | AVAX | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), Core, MetaMask, Trust Wallet, Ledger, Trezor |
+| **Base** | BASE | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Trust Wallet, Ledger, Trezor |
+| **Fantom** | FTM | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Trust Wallet, Ledger, Trezor |
+| **Cronos** | CRO | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Trust Wallet, Ledger, Trezor |
+| **Harmony** | ONE | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Trust Wallet |
+| **Gnosis Chain** | GNOSIS | `m/44'/60'/0'/0/i` (EVM) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), MetaMask, Rabby, Trust Wallet, Ledger, Trezor |
+| **Solana** | SOL | `m/44'/501'/0'/0'` (Phantom Standard)<br>`m/44'/501'/0'/0/i` (Sollet/Legacy) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), Phantom, Sollet, Solflare, Trust Wallet |
 | **Cardano** | ADA | `m/1852'/1815'/0'/0/i` (Shelley Native)<br>`m/44'/1815'/0'/0/i` (Byron Legacy) | Yoroi, Daedalus, Eternl, Lace |
-| **TRON** | TRX | `m/44'/195'/0'/0/i` | B2 Wallet, TronLink, Trust Wallet, Ledger, Trezor |
+| **TRON** | TRX | `m/44'/195'/0'/0/i` | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), TronLink, Trust Wallet, Ledger, Trezor |
 | **Waves** | WAVES | `m/44'/5741564'/0'/0/i` | Waves Keeper, Waves Client |
 | **Stellar** | XLM | `m/44'/148'/0'/0/i` | Lobstr, Stellar Wallet, Ledger |
 | **Ripple** | XRP | `m/44'/144'/0'/0/i` | Toast Wallet, Xumm, Ledger, Trezor |
@@ -190,11 +209,11 @@ cryptoseed
 | **Near** | NEAR | `m/44'/397'/0'/0'/0'` | MyNearWallet, Sender Wallet |
 | **Sui** | SUI | `m/44'/784'/0'/0'/0'` | Sui Wallet, Suiet, Trust Wallet |
 | **Aptos** | APT | `m/44'/637'/0'/0'/0'` | Petra Wallet, Pontem, Martian |
-| **Litecoin** | LTC | `m/84'/2'/0'/0/i` (Native SegWit)<br>`m/44'/2'/0'/0/i` (Legacy) | B2 Wallet, Electrum LTC, Trust Wallet, Ledger |
-| **Dogecoin** | DOGE | `m/44'/3'/0'/0/i` | B2 Wallet, Multidoge, Trust Wallet, Ledger, Trezor |
-| **Bitcoin Cash** | BCH | `m/44'/145'/0'/0/i` | B2 Wallet, Electron Cash, Trust Wallet, Ledger |
-| **Dash** | DASH | `m/44'/5'/0'/0/i` | B2 Wallet, Dash Core, Trust Wallet, Ledger |
-| **Zcash** | ZEC | `m/44'/133'/0'/0/i` | B2 Wallet, Trust Wallet, Ledger |
+| **Litecoin** | LTC | `m/84'/2'/0'/0/i` (Native SegWit)<br>`m/44'/2'/0'/0/i` (Legacy) | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), Electrum LTC, Trust Wallet, Ledger |
+| **Dogecoin** | DOGE | `m/44'/3'/0'/0/i` | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), Multidoge, Trust Wallet, Ledger, Trezor |
+| **Bitcoin Cash** | BCH | `m/44'/145'/0'/0/i` | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), Electron Cash, Trust Wallet, Ledger |
+| **Dash** | DASH | `m/44'/5'/0'/0/i` | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), Dash Core, Trust Wallet, Ledger |
+| **Zcash** | ZEC | `m/44'/133'/0'/0/i` | [B2 Wallet](https://better2better.com.br/softwares/b2-wallet), Trust Wallet, Ledger |
 | **Kaspa** | KAS | `m/44'/111111'/0'/0/i` | Kaspium, Kaspa Web Wallet |
 | **Monero** | XMR | `m/44'/128'/0'/0/i` | Cake Wallet, Monerujo, GUI Wallet |
 
@@ -221,4 +240,4 @@ cryptoseed
 该库 **100% 离线且在您的机器上本地**运行。代码开源、整洁，绝对不会发起任何网络请求来传输您的助记词或私钥。安全第一。
 
 *   **许可协议:** MIT (创建于 2023 年)
-*   **致谢:** 本项目属于 **b2 wallet** / [better2better](https://better2better.net) / [diegooris](https://diegohorantunes.web.app/) 生态。
+*   **致谢:** 本项目属于 [**b2 wallet**](https://better2better.com.br/softwares/b2-wallet) / [better2better](https://better2better.net) / [diegooris](https://diegohorantunes.web.app/) 生态。

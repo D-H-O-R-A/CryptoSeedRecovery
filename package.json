@@ -1,6 +1,6 @@
 {
   "name": "cryptoseed",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Biblioteca e ferramenta CLI empresarial de alta performance para diagnóstico, validação e recuperação de sementes mnemônicas (seed phrases) criptográficas.",
   "main": "src/index.js",
   "bin": {
