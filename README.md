@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. Corrigir palavra errada usando "Comer por Letras"
 const dicionario = wordlists.bip39.en;
-const palavraComErro = "engino";
+const palavraComErro = "*";
 const sugestoes = typo.getPrefixSuggestions(palavraComErro, dicionario);
 console.log("Palavra deduzida:", sugestoes); // Retorna [ 'engine' ]
 

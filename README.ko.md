@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. "글자 슬라이싱"을 사용하여 철자 오류 수정하기
 const dictionary = wordlists.bip39.ko || wordlists.bip39.en;
-const wordWithError = "engino";
+const wordWithError = "*";
 const suggestions = typo.getPrefixSuggestions(wordWithError, dictionary);
 console.log("추정된 단어:", suggestions); // [ 'engine' ]을 반환합니다.
 

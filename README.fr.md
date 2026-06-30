@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. Corriger un mot erroné avec le "Découpage de Lettres"
 const dictionnaire = wordlists.bip39.fr || wordlists.bip39.en;
-const motErrone = "engino";
+const motErrone = "*";
 const suggestions = typo.getPrefixSuggestions(motErrone, dictionnaire);
 console.log("Mot déduit :", suggestions); // Retourne [ 'engine' ]
 

@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. Correct typo using "Letter-Slicing"
 const dictionary = wordlists.bip39.en;
-const wordWithError = "engino";
+const wordWithError = "*";
 const suggestions = typo.getPrefixSuggestions(wordWithError, dictionary);
 console.log("Deduced word:", suggestions); // Returns [ 'engine' ]
 

@@ -4,8 +4,14 @@
  */
 
 const { ethers } = require('ethers');
-const { validateElectrumMnemonic, mnDecode } = require('./electrum-legacy');
-const { deriveAddress } = require('./address-deriver');
+const { 
+  validateElectrumMnemonic, 
+  mnDecode,
+  validateMoneroMnemonic,
+  validateAlgorandMnemonic,
+  validateCardanoByronMnemonic
+} = require('./electrum-legacy');
+const { deriveAddress, getEthersWordlist } = require('./address-deriver');
 
 // Helper to calculate factorial for Mode 4 progress estimates
 function factorial(n) {
@@ -17,35 +23,77 @@ function factorial(n) {
 }
 
 /**
+ * Validates any candidate mnemonic phrase based on coinKey and format.
+ * Utilizes specialized validation functions to support non-standard BIP-39 counts.
+ * 
+ * @param {string} phrase - Candidate phrase
+ * @param {string} format - 'bip39' | 'electrum'
+ * @param {string} coinKey - Currency code
+ * @returns {boolean}
+ */
+function isValidPhrase(phrase, format, coinKey, language = null) {
+  const cleanPhrase = phrase.trim().toLowerCase();
+  const words = cleanPhrase.split(/\s+/);
+  
+  if (format === 'electrum') {
+    return validateElectrumMnemonic(words);
+  }
+  
+  if (format === 'bip39') {
+    const cleanCoin = coinKey.toUpperCase().trim();
+    if (cleanCoin === 'XMR' || cleanCoin === 'MONERO') {
+      return validateMoneroMnemonic(words);
+    }
+    if (cleanCoin === 'ALGO' || cleanCoin === 'ALGORAND') {
+      return validateAlgorandMnemonic(words);
+    }
+    if ((cleanCoin === 'ADA' || cleanCoin === 'CARDANO') && words.length === 22) {
+      return validateCardanoByronMnemonic(words);
+    }
+    // Standard BIP-39 validation
+    let wl = null;
+    if (language) {
+      wl = ethers.wordlists[language] || ethers.wordlists[language.toLowerCase().replace('-', '_')];
+    }
+    if (!wl) {
+      wl = getEthersWordlist(cleanPhrase);
+    }
+    if (!wl) {
+      return false;
+    }
+    try {
+      return ethers.Mnemonic.isValidMnemonic(cleanPhrase, wl);
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Verifies if a candidate mnemonic is valid and derives the correct target public address.
  * 
  * @param {string} phrase - Candidate seed phrase (words separated by space)
  * @param {string} format - 'bip39' | 'electrum'
  * @param {string} walletType - 'metamask' | 'trust' | 'b2wallet'
  * @param {string} coinKey - 'ETH' (or 'EVM') | 'BTC' | 'LTC' | 'DOGE' | 'SOL' | 'XLM' | 'TRX'
- * @param {string} targetAddress - The public address we are looking for
+ * @param {string} targetAddress - The public address we are looking for (optional)
  * @returns {boolean} - True if it matches exactly
  */
-function verifyCandidate(phrase, format, walletType, coinKey, targetAddress, pattern = null) {
+function verifyCandidate(phrase, format, walletType, coinKey, targetAddress, pattern = null, language = null) {
   const cleanPhrase = phrase.trim().toLowerCase();
-  const cleanTarget = targetAddress.trim().toLowerCase();
+  const cleanTarget = targetAddress ? targetAddress.trim().toLowerCase() : '';
 
-  // 1. BIP-39 fast path: Verify checksum first if format is BIP-39
-  if (format === 'bip39') {
-    if (!ethers.Mnemonic.isValidMnemonic(cleanPhrase)) {
-      return false; // Skip address derivation for 99.6% of incorrect combinations
-    }
-  } else if (format === 'electrum') {
-    const words = cleanPhrase.split(/\s+/);
-    if (!validateElectrumMnemonic(words)) {
-      return false;
-    }
+  // 1. Unified fast path check (validates BIP-39, Electrum, Monero, Algorand, or Cardano paper seeds)
+  if (!isValidPhrase(cleanPhrase, format, coinKey, language)) {
+    return false;
   }
 
   // 2. Perform address derivation
   try {
-    const derivedAddr = deriveAddress(cleanPhrase, walletType, coinKey, 0, pattern);
-    return derivedAddr.toLowerCase() === cleanTarget;
+    const derivedAddr = deriveAddress(cleanPhrase, walletType, coinKey, 0, pattern, language);
+    return !cleanTarget || derivedAddr.toLowerCase() === cleanTarget;
   } catch (err) {
     return false; // Under incorrect path combinations or invalid sementes
   }
@@ -55,15 +103,17 @@ function verifyCandidate(phrase, format, walletType, coinKey, targetAddress, pat
  * MODE 1: Fixed Order + Wildcards
  * Expands in-place wildcards (e.g. 'bo*', '*') using product of matched words.
  */
-function searchMode1(patternList, format, wordlist, walletType, coinKey, targetAddress, onProgress, pattern = null) {
+function searchMode1(patternList, format, wordlist, walletType, coinKey, targetAddress, onProgress, pattern = null, startPrefixes = null, language = null) {
   const results = [];
   const assembledCandidates = [];
-  const cleanTarget = targetAddress.trim().toLowerCase();
+  const cleanTarget = targetAddress ? targetAddress.trim().toLowerCase() : '';
 
   // Match possible dictionary words for each slot
   const slots = patternList.map(pat => {
     const clean = pat.toLowerCase().trim();
-    if (clean === '*' || clean === '?') {
+    if (clean.includes(',')) {
+      return clean.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (clean === '*' || clean === '?') {
       return wordlist;
     } else if (clean.endsWith('*')) {
       const prefix = clean.slice(0, -1);
@@ -84,21 +134,18 @@ function searchMode1(patternList, format, wordlist, walletType, coinKey, targetA
       }
       const candidate = currentWords.join(' ');
       
-      let isValid = false;
-      if (format === 'bip39') {
-        isValid = ethers.Mnemonic.isValidMnemonic(candidate);
-      } else if (format === 'electrum') {
-        isValid = validateElectrumMnemonic(currentWords);
-      }
+      const isValid = isValidPhrase(candidate, format, coinKey, language);
 
       if (isValid) {
         try {
-          const derivedAddr = deriveAddress(candidate, walletType, coinKey, 0, pattern);
+          const derivedAddr = deriveAddress(candidate, walletType, coinKey, 0, pattern, language);
           if (assembledCandidates.length < 50000) {
             assembledCandidates.push({ phrase: candidate, address: derivedAddr });
           }
-          if (derivedAddr.toLowerCase() === cleanTarget) {
-            results.push(candidate);
+          if (!cleanTarget || derivedAddr.toLowerCase() === cleanTarget) {
+            if (results.length < 50000) {
+              results.push(candidate);
+            }
           }
         } catch (err) {
           // derivation fail
@@ -107,9 +154,6 @@ function searchMode1(patternList, format, wordlist, walletType, coinKey, targetA
       return;
     }
 
-    // Optimization: If the phrase is already completed up to 12 words and we are in BIP-39,
-    // we can only do early check on complete sementes, but since Cartesian is sequence-based,
-    // we iterate standard.
     const candidates = slots[idx];
     for (let i = 0; i < candidates.length; i++) {
       currentWords.push(candidates[i]);
@@ -118,27 +162,25 @@ function searchMode1(patternList, format, wordlist, walletType, coinKey, targetA
     }
   }
 
-  backtrack(0, []);
+  if (startPrefixes && startPrefixes.length > 0) {
+    for (const pref of startPrefixes) {
+      backtrack(pref.length, [...pref]);
+    }
+  } else {
+    backtrack(0, []);
+  }
+
   return { results, totalChecked: checkedCount, assembledCandidates };
 }
 
 /**
  * MODES 2 & 3: Shuffled Words with or without Wildcards (Backtracking Solver)
  * Finds placements of suppliedWords in the correct positions.
- * 
- * @param {string[]} suppliedWords - The words supplied by the user (some may contain wildcards like 'bo*')
- * @param {Object} constraints - Map of index to slot constraints:
- *   {
- *     [slotIndex]: {
- *       requiredWord: string,      // If a specific word is known to be in this slot
- *       excludedWords: string[]   // List of words known NOT to be in this slot (NOK constraint)
- *     }
- *   }
  */
-function searchMode2And3(suppliedWords, constraints, format, wordlist, walletType, coinKey, targetAddress, onProgress, pattern = null) {
+function searchMode2And3(suppliedWords, constraints, format, wordlist, walletType, coinKey, targetAddress, onProgress, pattern = null, startStates = null, language = null) {
   const results = [];
   const assembledCandidates = [];
-  const cleanTarget = targetAddress.trim().toLowerCase();
+  const cleanTarget = targetAddress ? targetAddress.trim().toLowerCase() : '';
   const seedSize = suppliedWords.length; // e.g. 12 or 24
   const assignment = Array(seedSize).fill(null);
   
@@ -175,7 +217,9 @@ function searchMode2And3(suppliedWords, constraints, format, wordlist, walletTyp
   // Pre-expand wildcards inside the floating words if any
   const expandedFloatingPools = floatingWords.map(word => {
     const clean = word.toLowerCase().trim();
-    if (clean === '*' || clean === '?') {
+    if (clean.includes(',')) {
+      return clean.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (clean === '*' || clean === '?') {
       return wordlist;
     } else if (clean.endsWith('*')) {
       const prefix = clean.slice(0, -1);
@@ -204,21 +248,18 @@ function searchMode2And3(suppliedWords, constraints, format, wordlist, walletTyp
       }
       const candidate = assignment.join(' ');
       
-      let isValid = false;
-      if (format === 'bip39') {
-        isValid = ethers.Mnemonic.isValidMnemonic(candidate);
-      } else if (format === 'electrum') {
-        isValid = validateElectrumMnemonic(assignment);
-      }
+      const isValid = isValidPhrase(candidate, format, coinKey, language);
 
       if (isValid) {
         try {
-          const derivedAddr = deriveAddress(candidate, walletType, coinKey, 0, pattern);
+          const derivedAddr = deriveAddress(candidate, walletType, coinKey, 0, pattern, language);
           if (assembledCandidates.length < 50000) {
             assembledCandidates.push({ phrase: candidate, address: derivedAddr });
           }
-          if (derivedAddr.toLowerCase() === cleanTarget) {
-            results.push(candidate);
+          if (!cleanTarget || derivedAddr.toLowerCase() === cleanTarget) {
+            if (results.length < 50000) {
+              results.push(candidate);
+            }
           }
         } catch (err) {
           // derivation fail
@@ -257,7 +298,20 @@ function searchMode2And3(suppliedWords, constraints, format, wordlist, walletTyp
     }
   }
 
-  backtrack(0);
+  if (startStates && startStates.length > 0) {
+    for (const state of startStates) {
+      for (let i = 0; i < seedSize; i++) {
+        assignment[i] = state.assignment[i];
+      }
+      for (let i = 0; i < usedWords.length; i++) {
+        usedWords[i] = state.usedWords[i];
+      }
+      backtrack(state.posIdx);
+    }
+  } else {
+    backtrack(0);
+  }
+
   return { results, totalChecked: checkedCount, assembledCandidates };
 }
 
@@ -265,10 +319,10 @@ function searchMode2And3(suppliedWords, constraints, format, wordlist, walletTyp
  * MODE 4: Full Descrambler
  * Tests all possible arrangements of a list of completely spelled scrambled words.
  */
-function searchMode4(scrambledWords, format, walletType, coinKey, targetAddress, onProgress, pattern = null) {
+function searchMode4(scrambledWords, format, walletType, coinKey, targetAddress, onProgress, pattern = null, startStates = null, language = null) {
   const results = [];
   const assembledCandidates = [];
-  const cleanTarget = targetAddress.trim().toLowerCase();
+  const cleanTarget = targetAddress ? targetAddress.trim().toLowerCase() : '';
   const words = scrambledWords.map(w => w.toLowerCase().trim());
   const n = words.length;
 
@@ -282,21 +336,18 @@ function searchMode4(scrambledWords, format, walletType, coinKey, targetAddress,
     }
     const candidate = arr.join(' ');
     
-    let isValid = false;
-    if (format === 'bip39') {
-      isValid = ethers.Mnemonic.isValidMnemonic(candidate);
-    } else if (format === 'electrum') {
-      isValid = validateElectrumMnemonic(arr);
-    }
+    const isValid = isValidPhrase(candidate, format, coinKey, language);
 
     if (isValid) {
       try {
-        const derivedAddr = deriveAddress(candidate, walletType, coinKey, 0, pattern);
+        const derivedAddr = deriveAddress(candidate, walletType, coinKey, 0, pattern, language);
         if (assembledCandidates.length < 50000) {
           assembledCandidates.push({ phrase: candidate, address: derivedAddr });
         }
-        if (derivedAddr.toLowerCase() === cleanTarget) {
-          results.push(candidate);
+        if (!cleanTarget || derivedAddr.toLowerCase() === cleanTarget) {
+          if (results.length < 50000) {
+            results.push(candidate);
+          }
         }
       } catch (err) {
         // derivation fail
@@ -304,39 +355,222 @@ function searchMode4(scrambledWords, format, walletType, coinKey, targetAddress,
     }
   }
 
-  // Heap's algorithm for generating permutations in-place
-  const arrCopy = [...words];
-  testCandidate(arrCopy);
+  // Backtracking-based permutation for starting states
+  function backtrackPermute(prefix, usedIndices) {
+    if (prefix.length === n) {
+      testCandidate(prefix);
+      return;
+    }
+    for (let i = 0; i < n; i++) {
+      if (usedIndices[i]) continue;
+      usedIndices[i] = true;
+      prefix.push(words[i]);
+      backtrackPermute(prefix, usedIndices);
+      prefix.pop();
+      usedIndices[i] = false;
+    }
+  }
 
-  const c = Array(n).fill(0);
-  let i = 0;
+  if (startStates && startStates.length > 0) {
+    for (const state of startStates) {
+      backtrackPermute([...state.prefix], [...state.usedIndices]);
+    }
+  } else {
+    // Heap's algorithm for generating permutations in-place
+    const arrCopy = [...words];
+    testCandidate(arrCopy);
 
-  while (i < n) {
-    if (c[i] < i) {
-      if (i % 2 === 0) {
-        const temp = arrCopy[0];
-        arrCopy[0] = arrCopy[i];
-        arrCopy[i] = temp;
+    const c = Array(n).fill(0);
+    let i = 0;
+
+    while (i < n) {
+      if (c[i] < i) {
+        if (i % 2 === 0) {
+          const temp = arrCopy[0];
+          arrCopy[0] = arrCopy[i];
+          arrCopy[i] = temp;
+        } else {
+          const temp = arrCopy[c[i]];
+          arrCopy[c[i]] = arrCopy[i];
+          arrCopy[i] = temp;
+        }
+        testCandidate(arrCopy);
+        c[i]++;
+        i = 0;
       } else {
-        const temp = arrCopy[c[i]];
-        arrCopy[c[i]] = arrCopy[i];
-        arrCopy[i] = temp;
+        c[i] = 0;
+        i++;
       }
-      testCandidate(arrCopy);
-      c[i]++;
-      i = 0;
-    } else {
-      c[i] = 0;
-      i++;
     }
   }
 
   return { results, totalChecked: checkedCount, assembledCandidates };
 }
 
+/**
+ * Task generation helpers for Worker Threads load balancing
+ */
+function getMode1Prefixes(patternList, format, wordlist, coinKey, W) {
+  const slots = patternList.map(pat => {
+    const clean = pat.toLowerCase().trim();
+    if (clean.includes(',')) {
+      return clean.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (clean === '*' || clean === '?') {
+      return wordlist;
+    } else if (clean.endsWith('*')) {
+      const prefix = clean.slice(0, -1);
+      return wordlist.filter(w => w.startsWith(prefix));
+    } else {
+      return [clean];
+    }
+  });
+
+  let maxDepth = 0;
+  let count = 1;
+  while (maxDepth < slots.length && count < W * 4) {
+    count *= slots[maxDepth].length;
+    maxDepth++;
+  }
+
+  const results = [];
+  function backtrack(idx, current) {
+    if (idx === maxDepth || idx === slots.length) {
+      results.push([...current]);
+      return;
+    }
+    for (const w of slots[idx]) {
+      current.push(w);
+      backtrack(idx + 1, current);
+      current.pop();
+    }
+  }
+  backtrack(0, []);
+  return results;
+}
+
+function getMode23PartialStates(suppliedWords, constraints, format, wordlist, coinKey, W) {
+  const seedSize = suppliedWords.length;
+  const assignment = Array(seedSize).fill(null);
+  const fixedPositions = {};
+  const activeConstraints = constraints || {};
+
+  for (let idx = 0; idx < seedSize; idx++) {
+    if (activeConstraints[idx] && activeConstraints[idx].requiredWord) {
+      assignment[idx] = activeConstraints[idx].requiredWord.toLowerCase().trim();
+      fixedPositions[idx] = true;
+    }
+  }
+
+  const floatingWords = suppliedWords.map(w => w.toLowerCase().trim());
+  for (let idx = 0; idx < seedSize; idx++) {
+    if (fixedPositions[idx]) {
+      const fixedWord = assignment[idx];
+      const matchIdx = floatingWords.indexOf(fixedWord);
+      if (matchIdx !== -1) {
+        floatingWords.splice(matchIdx, 1);
+      }
+    }
+  }
+
+  const floatingPositions = [];
+  for (let i = 0; i < seedSize; i++) {
+    if (!fixedPositions[i]) {
+      floatingPositions.push(i);
+    }
+  }
+
+  const expandedFloatingPools = floatingWords.map(word => {
+    const clean = word.toLowerCase().trim();
+    if (clean.includes(',')) {
+      return clean.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (clean === '*' || clean === '?') {
+      return wordlist;
+    } else if (clean.endsWith('*')) {
+      const prefix = clean.slice(0, -1);
+      return wordlist.filter(w => w.startsWith(prefix));
+    } else {
+      return [clean];
+    }
+  });
+
+  const states = [];
+  const usedWords = Array(expandedFloatingPools.length).fill(false);
+
+  function backtrackShallow(posIdx, currentAssignment, currentUsed) {
+    if (states.length >= W * 16 || posIdx === floatingPositions.length) {
+      states.push({
+        posIdx,
+        assignment: [...currentAssignment],
+        usedWords: [...currentUsed]
+      });
+      return;
+    }
+
+    const currentSlot = floatingPositions[posIdx];
+    const slotConstraint = activeConstraints[currentSlot];
+
+    for (let wordIdx = 0; wordIdx < expandedFloatingPools.length; wordIdx++) {
+      if (currentUsed[wordIdx]) continue;
+
+      const candidates = expandedFloatingPools[wordIdx];
+      for (let cIdx = 0; cIdx < candidates.length; cIdx++) {
+        const candidateWord = candidates[cIdx];
+
+        if (slotConstraint) {
+          if (slotConstraint.excludedWords && slotConstraint.excludedWords.includes(candidateWord)) {
+            continue;
+          }
+        }
+
+        currentAssignment[currentSlot] = candidateWord;
+        currentUsed[wordIdx] = true;
+
+        backtrackShallow(posIdx + 1, currentAssignment, currentUsed);
+
+        currentUsed[wordIdx] = false;
+        currentAssignment[currentSlot] = null;
+      }
+    }
+  }
+
+  backtrackShallow(0, assignment, usedWords);
+  return states;
+}
+
+function getMode4PartialStates(scrambledWords, W) {
+  const words = scrambledWords.map(w => w.toLowerCase().trim());
+  const n = words.length;
+  const states = [];
+
+  function backtrack(prefix, usedIndices) {
+    if (states.length >= W * 4 || prefix.length === n) {
+      states.push({
+        prefix: [...prefix],
+        usedIndices: [...usedIndices]
+      });
+      return;
+    }
+
+    for (let i = 0; i < n; i++) {
+      if (usedIndices[i]) continue;
+      usedIndices[i] = true;
+      prefix.push(words[i]);
+      backtrack(prefix, usedIndices);
+      prefix.pop();
+      usedIndices[i] = false;
+    }
+  }
+
+  backtrack([], Array(n).fill(false));
+  return states;
+}
+
 module.exports = {
   verifyCandidate,
   searchMode1,
   searchMode2And3,
-  searchMode4
+  searchMode4,
+  getMode1Prefixes,
+  getMode23PartialStates,
+  getMode4PartialStates
 };

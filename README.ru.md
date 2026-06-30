@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. Исправление опечатки с помощью технологии «нарезки букв»
 const dictionary = wordlists.bip39.ru || wordlists.bip39.en;
-const wordWithError = "engino";
+const wordWithError = "*";
 const suggestions = typo.getPrefixSuggestions(wordWithError, dictionary);
 console.log("Угаданное слово:", suggestions); // Возвращает [ 'engine' ]
 

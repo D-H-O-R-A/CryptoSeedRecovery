@@ -64,4 +64,12 @@ test('Electrum Legacy Module', async (t) => {
     assert.throws(() => mnDecode(["like", "just"]), /Wordlist length must be a multiple of 3/);
     assert.throws(() => mnDecode(["like", "just", "not_a_poet_word"]), /not found in poetic dictionary/);
   });
+
+  await t.test('should derive correct addresses from legacy Electrum poetic mnemonic', () => {
+    const { deriveAddress } = require('../src/lib/address-deriver');
+    const mnemonic = "like just love know never want time out there make look eye";
+    const address = deriveAddress(mnemonic, 'electrum', 'BTC', 0, 'segwit');
+    assert.ok(address);
+    assert.ok(address.startsWith('bc1q')); // SegWit starts with bc1q
+  });
 });

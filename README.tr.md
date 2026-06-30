@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. "Harf Dilimleme" kullanarak yazım hatasını düzeltin
 const sozluk = wordlists.bip39.tr || wordlists.bip39.en;
-const hataliKelime = "engino";
+const hataliKelime = "*";
 const oneriler = typo.getPrefixSuggestions(hataliKelime, sozluk);
 console.log("Tahmin edilen kelime:", oneriler); // [ 'engine' ] döner
 

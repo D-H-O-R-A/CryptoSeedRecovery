@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. 使用“字母裁剪”技术纠正拼写错误
 const dictionary = wordlists.bip39.zh_cn || wordlists.bip39.en;
-const wordWithError = "engino";
+const wordWithError = "*";
 const suggestions = typo.getPrefixSuggestions(wordWithError, dictionary);
 console.log("推导单词为:", suggestions); // 输出: [ 'engine' ]
 

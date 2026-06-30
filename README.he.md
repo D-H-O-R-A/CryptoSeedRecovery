@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. תיקון שגיאת הקלדה באמצעות "חיתוך אותיות"
 const dictionary = wordlists.bip39.he || wordlists.bip39.en;
-const wordWithError = "engino";
+const wordWithError = "*";
 const suggestions = typo.getPrefixSuggestions(wordWithError, dictionary);
 console.log("המילה שנגזרה:", suggestions); // מחזיר [ 'engine' ]
 

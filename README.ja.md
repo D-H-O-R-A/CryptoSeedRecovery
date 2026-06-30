@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. 「文字スライス」を使用してスペルミスを修正する
 const dictionary = wordlists.bip39.ja || wordlists.bip39.en;
-const wordWithError = "engino";
+const wordWithError = "*";
 const suggestions = typo.getPrefixSuggestions(wordWithError, dictionary);
 console.log("推測された単語:", suggestions); // [ 'engine' ] を返します
 

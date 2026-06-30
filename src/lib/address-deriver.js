@@ -6,6 +6,46 @@
 
 const { ethers } = require('ethers');
 
+/**
+ * Helper to dynamically detect and load the correct ethers BIP-39 wordlist for a given mnemonic.
+ */
+function getEthersWordlist(phrase) {
+  const words = phrase.trim().toLowerCase().split(/\s+/);
+  if (words.length === 0) return null;
+  
+  // Filter out wildcards, placeholders, and non-alphabetic strings
+  const cleanWords = words.filter(w => w && w !== '*' && w !== '?' && !w.endsWith('*') && /^[a-z]+$/i.test(w));
+  if (cleanWords.length === 0) return null;
+
+  let bestWl = null;
+  let maxMatches = -1;
+
+  for (const lang in ethers.wordlists) {
+    const wl = ethers.wordlists[lang];
+    if (wl && wl.getWordIndex) {
+      try {
+        let matches = 0;
+        for (const w of cleanWords) {
+          if (wl.getWordIndex(w) >= 0) {
+            matches++;
+          }
+        }
+        if (matches > maxMatches) {
+          maxMatches = matches;
+          bestWl = wl;
+        }
+      } catch (e) {}
+    }
+  }
+
+  // Reject mismatching dictionary inputs (returns null if not all clean words are found in the best wordlist)
+  if (bestWl && maxMatches === cleanWords.length) {
+    return bestWl;
+  }
+  
+  return null;
+}
+
 // ============================================================================
 // Hashing Primitives & Encoders
 // ============================================================================
@@ -491,6 +531,28 @@ function deriveB2PrivateKey(masterSeed, coinType, index = 0) {
 }
 
 /**
+ * Codificador Bech32 simplificado (conversão de 8 bits para 5 bits) da B2 Wallet.
+ */
+function encodeB2Bech32(buffer) {
+  const alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+  let value = 0;
+  let bits = 0;
+  let output = '';
+  for (let i = 0; i < buffer.length; i++) {
+    value = (value << 8) + buffer[i];
+    bits += 8;
+    while (bits >= 5) {
+      output += alphabet[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits > 0) {
+    output += alphabet[(value << (5 - bits)) & 31];
+  }
+  return output;
+}
+
+/**
  * B2 Wallet address generation from custom derived private keys
  */
 function deriveB2Address(privateKeyHex, coinKey) {
@@ -501,28 +563,34 @@ function deriveB2Address(privateKeyHex, coinKey) {
   switch (key) {
     case 'BTC':
     case 'BITCOIN': {
-      const hash160 = ripemd160Bytes(sha256Bytes(pubKeyBytes));
-      return 'bc1q' + encodeBech32("bc", 0, hash160);
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return 'bc1q' + encodeB2Bech32(hash160);
     }
 
     case 'BTC_TAPROOT':
     case 'TAPROOT': {
-      return encodeBech32("bc", 1, pubKeyBytes, true);
+      return 'bc1p' + encodeB2Bech32(pubKeyBytes);
     }
 
     case 'DASH': {
-      const hash160 = ripemd160Bytes(sha256Bytes(pubKeyBytes));
-      return encodeBase58CheckWithPrefix([0x4c], hash160);
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      const payload = new Uint8Array(21);
+      payload[0] = 0x4C;
+      payload.set(hash160, 1);
+      const cs = keccak256Bytes(keccak256Bytes(payload)).subarray(0, 4);
+      const full = new Uint8Array(25);
+      full.set(payload); full.set(cs, 21);
+      return encodeBase58(full);
     }
 
     case 'SCRT': {
-      const hash160 = ripemd160Bytes(sha256Bytes(pubKeyBytes));
-      return encodeBech32("secret", 0, hash160);
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return 'secret1' + encodeB2Bech32(hash160);
     }
 
     case 'INJ': {
-      const hash160 = ripemd160Bytes(sha256Bytes(pubKeyBytes));
-      return encodeBech32("inj", 0, hash160);
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return 'inj1' + encodeB2Bech32(hash160);
     }
 
     case 'HBAR': {
@@ -530,11 +598,11 @@ function deriveB2Address(privateKeyHex, coinKey) {
     }
 
     case 'XEM': {
-      const hashed = ripemd160Bytes(sha256Bytes(pubKeyBytes));
+      const hashed = keccak256Bytes(pubKeyBytes).subarray(0, 20);
       const payload = new Uint8Array(21);
       payload[0] = 0x68;
       payload.set(hashed, 1);
-      const checksum = sha256Bytes(payload).subarray(0, 4);
+      const checksum = keccak256Bytes(payload).subarray(0, 4);
       const full = new Uint8Array(25);
       full.set(payload);
       full.set(checksum, 21);
@@ -542,27 +610,45 @@ function deriveB2Address(privateKeyHex, coinKey) {
     }
 
     case 'XCH': {
-      const hash160 = ripemd160Bytes(sha256Bytes(pubKeyBytes));
-      return encodeBech32("xch", 0, hash160, true);
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return 'xch1' + encodeB2Bech32(hash160);
     }
 
     case 'LTC':
     case 'LITECOIN': {
-      const hash160 = ripemd160Bytes(sha256Bytes(pubKeyBytes));
-      return encodeBase58CheckWithPrefix([0x30], hash160);
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      const payload = new Uint8Array(21);
+      payload[0] = 0x30;
+      payload.set(hash160, 1);
+      const cs = keccak256Bytes(keccak256Bytes(payload)).subarray(0, 4);
+      const full = new Uint8Array(25);
+      full.set(payload); full.set(cs, 21);
+      return encodeBase58(full);
     }
 
     case 'DOGE':
     case 'DOGECOIN': {
-      const hash160 = ripemd160Bytes(sha256Bytes(pubKeyBytes));
-      return encodeBase58CheckWithPrefix([0x1E], hash160);
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      const payload = new Uint8Array(21);
+      payload[0] = 0x1E;
+      payload.set(hash160, 1);
+      const cs = keccak256Bytes(keccak256Bytes(payload)).subarray(0, 4);
+      const full = new Uint8Array(25);
+      full.set(payload); full.set(cs, 21);
+      return encodeBase58(full);
     }
 
     case 'TRX':
     case 'TRON': {
       const keccakHash = keccak256Bytes(pubKeyBytes);
-      const addressHash = keccakHash.subarray(12); // last 20 bytes
-      return encodeBase58CheckWithPrefix([0x41], addressHash);
+      const tronHash = keccakHash.subarray(12, 32);
+      const payload = new Uint8Array(21);
+      payload[0] = 0x41;
+      payload.set(tronHash, 1);
+      const cs = keccak256Bytes(keccak256Bytes(payload)).subarray(0, 4);
+      const full = new Uint8Array(25);
+      full.set(payload); full.set(cs, 21);
+      return encodeBase58(full);
     }
 
     case 'SOL':
@@ -579,6 +665,138 @@ function deriveB2Address(privateKeyHex, coinKey) {
       payload[33] = crc & 0xFF;
       payload[34] = (crc >>> 8) & 0xFF;
       return encodeBase32(payload);
+    }
+
+    case 'WAVES': {
+      const blakePub = blake2b256(pubKeyBytes);
+      const keccakPub = keccak256Bytes(blakePub);
+      const accountHash = keccakPub.subarray(0, 20);
+      const body = new Uint8Array(22);
+      body[0] = 0x01;
+      body[1] = 87; // 'W'
+      body.set(accountHash, 2);
+      const checksum = keccak256Bytes(blake2b256(body)).subarray(0, 4);
+      const wavesAddr = new Uint8Array(26);
+      wavesAddr.set(body);
+      wavesAddr.set(checksum, 22);
+      return encodeBase58(wavesAddr);
+    }
+
+    case 'ADA':
+    case 'CARDANO': {
+      const hash = keccak256Bytes(pubKeyBytes).subarray(0, 28);
+      return 'addr1' + encodeB2Bech32(hash);
+    }
+
+    case 'DOT':
+    case 'POLKADOT': {
+      const ss58 = new Uint8Array(35);
+      ss58[0] = 0x00;
+      ss58.set(pubKeyBytes, 1);
+      const encoder = new TextEncoder();
+      const prefix = encoder.encode('SS58PRE');
+      const toHash = new Uint8Array(prefix.length + 33);
+      toHash.set(prefix); toHash.set(ss58.subarray(0, 33), prefix.length);
+      const cs = blake2b256(toHash).subarray(0, 2);
+      ss58[33] = cs[0]; ss58[34] = cs[1];
+      return encodeBase58(ss58);
+    }
+
+    case 'KSM':
+    case 'KUSAMA': {
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      const payload = new Uint8Array(21);
+      payload[0] = 0x02;
+      payload.set(hash160, 1);
+      const cs = keccak256Bytes(keccak256Bytes(payload)).subarray(0, 4);
+      const full = new Uint8Array(25);
+      full.set(payload); full.set(cs, 21);
+      return encodeBase58(full);
+    }
+
+    case 'ATOM':
+    case 'COSMOS': {
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return 'cosmos1' + encodeB2Bech32(hash160);
+    }
+
+    case 'OSMO':
+    case 'OSMOSIS': {
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return 'osmo1' + encodeB2Bech32(hash160);
+    }
+
+    case 'KAS':
+    case 'KASPA': {
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return 'kaspa:' + encodeB2Bech32(hash160);
+    }
+
+    case 'ZEC':
+    case 'ZCASH': {
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      const payload = new Uint8Array(22);
+      payload[0] = 0x1C; payload[1] = 0xB8;
+      payload.set(hash160, 2);
+      const cs = keccak256Bytes(keccak256Bytes(payload)).subarray(0, 4);
+      const full = new Uint8Array(26);
+      full.set(payload); full.set(cs, 22);
+      return encodeBase58(full);
+    }
+
+    case 'BCH':
+    case 'BITCOINCASH': {
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return 'bitcoincash:q' + Array.from(hash160).map(b => b.toString(16).padStart(2,'0')).join('').substring(0,40);
+    }
+
+    case 'XMR':
+    case 'MONERO': {
+      const viewKey = blake2b256(privBytes);
+      const payload = new Uint8Array(69);
+      payload[0] = 0x12;
+      payload.set(pubKeyBytes, 1);
+      payload.set(viewKey, 33);
+      const cs = keccak256Bytes(payload.subarray(0, 65)).subarray(0, 4);
+      payload.set(cs, 65);
+      return encodeBase58(payload);
+    }
+
+    case 'XRP':
+    case 'RIPPLE': {
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return encodeBase58CheckWithPrefixRipple([0x00], hash160);
+    }
+
+    case 'ALGO':
+    case 'ALGORAND': {
+      const checksum = keccak256Bytes(pubKeyBytes).subarray(28);
+      const full = new Uint8Array(36);
+      full.set(pubKeyBytes);
+      full.set(checksum, 32);
+      return encodeBase32(full);
+    }
+
+    case 'NEAR': {
+      const hashBytes = keccak256Bytes(pubKeyBytes);
+      return '0x' + Array.from(hashBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    case 'SUI': {
+      const hashBytes = keccak256Bytes(pubKeyBytes);
+      return '0x' + Array.from(hashBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    case 'APT':
+    case 'APTOS': {
+      const hashBytes = keccak256Bytes(pubKeyBytes);
+      return '0x' + Array.from(hashBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    case 'XTZ':
+    case 'TEZOS': {
+      const hash160 = keccak256Bytes(pubKeyBytes).subarray(0, 20);
+      return encodeBase58CheckWithPrefix([6, 161, 159], hash160);
     }
 
     case 'EVM':
@@ -606,7 +824,7 @@ function deriveB2Address(privateKeyHex, coinKey) {
  * @param {string} [pattern] - Optional pattern override
  * @returns {string} - Derived public address string
  */
-function deriveAddress(mnemonic, walletType, coinKey, index = 0, pattern = null) {
+function deriveAddress(mnemonic, walletType, coinKey, index = 0, pattern = null, language = null) {
   if (typeof mnemonic !== 'string') {
     throw new Error('Mnemonic must be a string');
   }
@@ -818,11 +1036,29 @@ function deriveAddress(mnemonic, walletType, coinKey, index = 0, pattern = null)
   // Derive HD Node
   let node;
   try {
-    node = ethers.HDNodeWallet.fromMnemonic(
-      ethers.Mnemonic.fromPhrase(cleanMnemonic),
-      undefined,
-      path
-    );
+    const { validateElectrumMnemonic, mnDecode } = require('./electrum-legacy');
+    const words = cleanMnemonic.split(/\s+/);
+    if (validateElectrumMnemonic(words)) {
+      const hex = mnDecode(words);
+      const seedBytes = sha256Bytes(new TextEncoder().encode(hex));
+      node = ethers.HDNodeWallet.fromSeed(seedBytes).derivePath(path);
+    } else {
+      let wl;
+      if (language) {
+        wl = ethers.wordlists[language] || ethers.wordlists[language.toLowerCase().replace('-', '_')];
+      }
+      if (!wl) {
+        wl = getEthersWordlist(cleanMnemonic);
+      }
+      if (!wl) {
+        throw new Error('No matching BIP-39 wordlist detected for the given mnemonic phrase.');
+      }
+      node = ethers.HDNodeWallet.fromMnemonic(
+        ethers.Mnemonic.fromPhrase(cleanMnemonic, undefined, wl),
+        undefined,
+        path
+      );
+    }
   } catch (err) {
     throw new Error(`Failed to derive HDNode for path ${path}: ${err.message}`);
   }
@@ -1041,5 +1277,6 @@ module.exports = {
   deriveB2Address,
 
   // Public API
-  deriveAddress
+  deriveAddress,
+  getEthersWordlist
 };

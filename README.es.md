@@ -100,7 +100,7 @@ const { wordlists, searchEngine, addressDeriver, typo } = require('cryptoseed');
 
 // 1. Corregir error ortográfico usando "Recorte de Letras"
 const diccionario = wordlists.bip39.es || wordlists.bip39.en;
-const palabraConErro = "engino";
+const palabraConErro = "*";
 const sugerencias = typo.getPrefixSuggestions(palabraConErro, diccionario);
 console.log("Palabra deducida:", sugerencias); // Retorna [ 'engine' ]
 
