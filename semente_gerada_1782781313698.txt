@@ -1,0 +1,15 @@
+===========================================================
+SECURE GENERATED SEED REPORT
+===========================================================
+Date/Time:            29/06/2026, 22:01:53
+Wallet Profile:       B2WALLET
+Target Blockchain:    BTC
+Derivation Pattern:   STANDARD/PADRÃO
+-----------------------------------------------------------
+SEED PHRASE / FRASE DA SEMENTE:
+  duty raise stone ecology auto shrimp apology behave primary diesel phone since
+-----------------------------------------------------------
+Derived Public Address (Index 0): bc1q5gjtwre63udjgmcsvhcusjrclcu7k9h4
+Derivation Path Used: B2 Wallet Custom Multichain PBKDF2/XOR
+===========================================================
+Keep this information in a safe place. Never share your private keys with anyone.

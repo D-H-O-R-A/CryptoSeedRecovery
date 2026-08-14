@@ -1,0 +1,24 @@
+===========================================================
+      RELATÓRIO DE RECUPERAÇÃO DE SEMENTE - CRYPTOSEEDRECOVERY
+===========================================================
+Data/Hora:            29/06/2026, 22:02:43
+Perfil Carteira:      B2WALLET
+Ano de Criação:       MIDDLE_2015_2019
+Blockchain Alvo:      BTC
+Padrão de Derivação:  STANDARD/PADRÃO
+Sementes Testadas:    1
+Sementes Com Checksum Válido: 1
+Tempo de Busca:       0.01 segundos
+-----------------------------------------------------------
+ESTIMATIVA DE VELOCIDADE DE CONSULTA DE SALDO:
+• Via URL/API Pública (50ms/req): 50.0 ms
+• Via RPC Node Local (0.1ms/req):  0.1 ms
+-----------------------------------------------------------
+SEMENTE(S) EXATA(S) COMPATÍVEL(IS) ENCONTRADA(S):
+[Opção #1]  =>  duty raise stone ecology auto shrimp apology behave primary diesel phone since
+-----------------------------------------------------------
+LISTA DE SEMENTES MONTADAS COM CHECKSUM VÁLIDO E SEUS ENDEREÇOS DERIVADOS:
+[Semente #1] duty raise stone ecology auto shrimp apology behave primary diesel phone since 
+   -> Endereço derivado: bc1q5gjtwre63udjgmcsvhcusjrclcu7k9h4
+===========================================================
+Mantenha esta informação em local seguro. Nunca compartilhe suas chaves com terceiros.
